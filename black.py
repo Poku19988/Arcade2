@@ -7,13 +7,16 @@ import os
 
 import arcade
 import time
+#music
+background_music = arcade.Sound("Music.mp3")
+background_music.play(loop = True,volume=0.1)
 #Time
 start_time = time.time()
 # Constants
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 800
-SCREEN_TITLE = "Platformer"
-Time = 0
+SCREEN_TITLE = "Platformerr"
+TIME_LEFT = 30  # 30 seconds
 # Constants used to scale our sprites from their original size
 TILE_SCALING = 3
 CHARACTER_SCALING = 1
@@ -25,8 +28,8 @@ GRID_PIXEL_SIZE = SPRITE_PIXEL_SIZE * TILE_SCALING
 PLAYER_MOVEMENT_SPEED = 7
 GRAVITY = 0
 
-PLAYER_START_X = SPRITE_PIXEL_SIZE * TILE_SCALING * 2
-PLAYER_START_Y = SPRITE_PIXEL_SIZE * TILE_SCALING * 1
+PLAYER_START_X = SCREEN_HEIGHT//2
+PLAYER_START_Y =SCREEN_WIDTH//2
 
 # Constants used to track if the player is facing left or right
 RIGHT_FACING = 0
@@ -37,6 +40,8 @@ LAYER_NAME_PLATFORMS = "walls"
 LAYER_NAME_COINS = "coins"
 LAYER_NAME_BACKGROUND = "background"
 LAYER_NAME_PLAYER = "player"
+LAYER_NAME_PASSABLES = "passables"
+LAYER_NAME_BACKGROUND2 = "bg2"
 
 
 def load_texture_pair(filename):
@@ -69,7 +74,7 @@ class PlayerCharacter(arcade.Sprite):
         # --- Load Textures ---
 
         # Images from Kenney.nl's Asset Pack 3
-        main_path = ":resources:images/animated_characters/male_person/"
+        main_path = "male_person/"
 
         # Load textures for idle standing
         
@@ -163,11 +168,12 @@ class MyGame(arcade.Window):
         self.end_of_map = 0
 
         # Keep track of the score
+        self.time_left = TIME_LEFT
         self.score = 0
 
         # Load sounds
-        self.collect_coin_sound = arcade.load_sound(":resources:sounds/coin1.wav")
-        self.game_over = arcade.load_sound(":resources:sounds/gameover1.wav")
+        self.collect_coin_sound = arcade.load_sound("coin1.wav")
+        self.game_over = arcade.load_sound("gameover1.wav")
         #Time
         self.start_time = time.time()
     def setup(self):
@@ -178,7 +184,7 @@ class MyGame(arcade.Window):
         self.gui_camera = arcade.Camera(self.width, self.height)
 
         # Map name
-        map_name = ":resources:final2.json"
+        map_name = "bg.json"
 
         # Layer Specific Options for the Tilemap
         layer_options = {
@@ -192,6 +198,12 @@ class MyGame(arcade.Window):
             },
             LAYER_NAME_BACKGROUND : {
                  "use_spatial_hash": True
+            },
+            LAYER_NAME_PASSABLES :{
+                "use_spatial_hash": True
+            },
+            LAYER_NAME_BACKGROUND2 : {
+                "use_spatial_hash": True
             }
         }
 
@@ -251,6 +263,9 @@ class MyGame(arcade.Window):
             18,
         )
 
+        arcade.draw_text(f"Time left: {int(self.time_left)}", SCREEN_WIDTH //2, 0 ,
+                         arcade.color.WHITE, font_size=18, anchor_x="center")
+
         # Draw hit boxes.
         # for wall in self.wall_list:
         #     wall.draw_hit_box(arcade.color.BLACK, 3)
@@ -278,7 +293,17 @@ class MyGame(arcade.Window):
         
         else :
             self.player_sprite.change_x = 0
-
+        if self.score ==1 :
+            end_text = "You win"
+            self.clear()
+            
+            arcade.draw_text(
+            end_text,
+            SCREEN_HEIGHT//2,
+            SCREEN_WIDTH//2,
+            arcade.csscolor.WHITE,
+            30,
+            )
     def on_key_press(self, key, modifiers):
         """Called whenever a key is pressed."""
 
@@ -319,13 +344,13 @@ class MyGame(arcade.Window):
         player_centered = screen_center_x, screen_center_y
 
         self.camera.move_to(player_centered, 0.2)
-
+    
     def on_update(self, delta_time):
         """Movement and game logic"""
         self.process_keychange()
         # Move the player with the physics engine
         self.physics_engine.update()
-
+        
         # Update animations
         self.Time += delta_time
         self.player_sprite.update_animation(delta_time)
@@ -354,24 +379,14 @@ class MyGame(arcade.Window):
             # Remove the coin
             coin.remove_from_sprite_lists()
             arcade.play_sound(self.collect_coin_sound)
+        self.time_left -= delta_time
 
         # Position the camera
         self.center_camera_to_player()
         elapsed_time = time.time() - self.start_time
-        if elapsed_time > 20   :
+        if elapsed_time > 30  :
             self.close()
-        if self.score > 10 :
-            end_text = "You win"
-            self.clear()
-            self.camera.use()
-            self.gui_camera.use()
-            arcade.draw_text(
-            end_text,
-            20,
-            20,
-            arcade.csscolor.WHITE,
-            30,
-            )
+        
 
 
 
